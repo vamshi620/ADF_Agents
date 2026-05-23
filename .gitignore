@@ -1,0 +1,8 @@
+# ADF Copilot Agents — .gitignore
+node_modules/
+dist/
+.env
+workspace/
+logs/
+.copilot-state/
+*.js.map

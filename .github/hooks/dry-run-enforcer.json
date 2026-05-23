@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "description": "DRY-RUN ENFORCER: Ensures run_sql is always called with dryRun=true at least once before a real execution in the same session. Prevents first-run direct commits to the database.",
+  "hooks": {
+    "preToolUse": [
+      {
+        "type": "command",
+        "description": "Track dry-run state per session; block real SQL execution if dry-run hasn't been run yet",
+        "powershell": "param($input)\n$payload = $input | ConvertFrom-Json\nif ($payload.tool_name -ne 'run_sql') { exit 0 }\n$dryRun = $payload.tool_input.dryRun\n$sessionId = $payload.session_id\n$stateDir = Join-Path $payload.cwd '.copilot-state'\n$stateFile = Join-Path $stateDir \"dryrun-$sessionId.flag\"\n# If this IS a dry run, create the flag file\nif ($dryRun -eq $true) {\n  if (-not (Test-Path $stateDir)) { New-Item -ItemType Directory -Path $stateDir | Out-Null }\n  Set-Content -Path $stateFile -Value (Get-Date -Format 'o')\n  exit 0\n}\n# If this is NOT a dry run, check that dry run was done first\nif (-not (Test-Path $stateFile)) {\n  Write-Output ('{\"decision\":\"block\",\"reason\":\"Dry-run required first. Call run_sql with dryRun=true to validate your SQL before executing for real. This protects your database from accidental changes.\"}')\n  exit 1\n}\nexit 0"
+      }
+    ],
+    "sessionEnd": [
+      {
+        "type": "command",
+        "description": "Clean up session dry-run flag files on session end",
+        "powershell": "param($input)\n$payload = $input | ConvertFrom-Json\n$stateDir = Join-Path $payload.cwd '.copilot-state'\n$sessionId = $payload.session_id\n$stateFile = Join-Path $stateDir \"dryrun-$sessionId.flag\"\nif (Test-Path $stateFile) { Remove-Item $stateFile }\nexit 0"
+      }
+    ]
+  }
+}

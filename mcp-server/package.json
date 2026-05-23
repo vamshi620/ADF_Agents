@@ -1,0 +1,32 @@
+{
+  "name": "adf-copilot-agents",
+  "version": "1.0.0",
+  "description": "MCP Server powering ADF Copilot Agents — takes requirements, builds SQL queries, generates ADF pipelines, deploys, and tests them.",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "node --max-old-space-size=4096 ./node_modules/typescript/bin/tsc",
+    "start": "node dist/index.js",
+    "dev": "node --loader ts-node/esm src/index.ts",
+    "watch": "node --max-old-space-size=4096 ./node_modules/typescript/bin/tsc --watch"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.11.0",
+    "docx": "^9.0.0",
+    "dotenv": "^16.4.5",
+    "msnodesqlv8": "^4.1.0",
+    "mssql": "^11.0.1",
+    "node-fetch": "^3.3.2",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/mssql": "^9.1.5",
+    "@types/node": "^20.14.0",
+    "@types/node-fetch": "^2.6.11",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

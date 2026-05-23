@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "description": "AUDIT LOGGER: Records every tool call (tool name, inputs summary, timestamp, session) to a local audit log file. Useful for compliance, debugging, and tracking all DB operations made by agents.",
+  "hooks": {
+    "preToolUse": [
+      {
+        "type": "command",
+        "description": "Log tool invocation BEFORE it runs",
+        "powershell": "param($input)\n$payload = $input | ConvertFrom-Json\n$logDir = Join-Path $payload.cwd 'logs'\nif (-not (Test-Path $logDir)) { New-Item -ItemType Directory -Path $logDir | Out-Null }\n$logFile = Join-Path $logDir 'agent-audit.log'\n$timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'\n$toolName = $payload.tool_name\n$sessionId = $payload.session_id\n# Summarize tool input (truncate long SQL)\n$inputJson = $payload.tool_input | ConvertTo-Json -Compress\nif ($inputJson.Length -gt 300) { $inputJson = $inputJson.Substring(0, 300) + '...[truncated]' }\n$logEntry = \"[$timestamp] PRE  | session=$sessionId | tool=$toolName | input=$inputJson\"\nAdd-Content -Path $logFile -Value $logEntry\nexit 0"
+      }
+    ],
+    "postToolUse": [
+      {
+        "type": "command",
+        "description": "Log tool result AFTER it completes",
+        "powershell": "param($input)\n$payload = $input | ConvertFrom-Json\n$logDir = Join-Path $payload.cwd 'logs'\nif (-not (Test-Path $logDir)) { New-Item -ItemType Directory -Path $logDir | Out-Null }\n$logFile = Join-Path $logDir 'agent-audit.log'\n$timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'\n$toolName = $payload.tool_name\n$sessionId = $payload.session_id\n$success = if ($payload.tool_result.isError) { 'ERROR' } else { 'OK' }\n$logEntry = \"[$timestamp] POST | session=$sessionId | tool=$toolName | result=$success\"\nAdd-Content -Path $logFile -Value $logEntry\nexit 0"
+      }
+    ]
+  }
+}

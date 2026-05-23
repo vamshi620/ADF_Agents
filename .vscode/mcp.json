@@ -1,0 +1,12 @@
+{
+  "servers": {
+    "adf-copilot-mcp": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["${workspaceFolder}/mcp-server/dist/index.js"],
+      "env": {
+        "NODE_ENV": "production"
+      }
+    }
+  }
+}

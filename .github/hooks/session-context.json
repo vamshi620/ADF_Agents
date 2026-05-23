@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "description": "SESSION CONTEXT LOADER: Fires when an agent session starts. Loads workspace context — DB connection status indicator, available agents, and a welcome banner — so the agent knows its operating environment immediately.",
+  "hooks": {
+    "sessionStart": [
+      {
+        "type": "command",
+        "description": "Inject project context into session on startup",
+        "powershell": "param($input)\n$payload = $input | ConvertFrom-Json\n$cwd = $payload.cwd\n# Check if .env exists\n$envExists = Test-Path (Join-Path $cwd '.env')\n$envStatus = if ($envExists) { 'CONFIGURED' } else { 'MISSING — copy .env.example to .env' }\n# Check if MCP server is built\n$distExists = Test-Path (Join-Path $cwd 'mcp-server/dist/index.js')\n$mcpStatus = if ($distExists) { 'BUILT' } else { 'NOT BUILT — run: cd mcp-server && npm run build' }\n# Check output dir\n$outputDir = Join-Path $cwd 'workspace/docs'\nif (-not (Test-Path $outputDir)) { New-Item -ItemType Directory -Path $outputDir | Out-Null }\n$outputCount = (Get-ChildItem $outputDir -Filter '*.docx' -ErrorAction SilentlyContinue | Measure-Object).Count\n# Build context output\n$context = @\"\n=== ADF COPILOT AGENTS — SESSION STARTED ===\nProject  : $cwd\n.env     : $envStatus\nMCP Build: $mcpStatus\nOutput/  : $outputCount existing document(s)\nMEMORY   : $(if (Test-Path (Join-Path $cwd 'workspace/ADF_MEMORY.md')) { 'EXISTS (pipeline in progress)' } else { 'Not found (new session)' })\n\n>>> ENTRY POINT: @adf-orchestrator <<<\n  Start here for ALL new features. It coordinates the full pipeline.\n  Type: @adf-orchestrator I need to build [your feature]\n\nPipeline Agents (called by orchestrator):\n  @adf-requirements-agent — Step 1: Requirements + Word doc\n  @adf-sql-agent          — Step 2: SQL inline queries\n  @adf-builder-agent      — Step 3: Build ADF ARM template\n  @adf-deploy-agent       — Step 4: Deploy to Azure ADF\n  @adf-test-agent         — Step 5: Test + CSV + Word doc\n  @adf-code-review-agent  — Step 6: Code review + Word doc\n\nActive Safety Hooks:\n  dry-run-enforcer    — Requires dryRun=true before real SQL execution\n  audit-logger        — Logs all tool calls to logs/agent-audit.log\n============================================\n\"@\n# Write context to a temp file that the agent can read\n$contextFile = Join-Path $cwd '.copilot-state/session-context.txt'\n$stateDir = Join-Path $cwd '.copilot-state'\nif (-not (Test-Path $stateDir)) { New-Item -ItemType Directory -Path $stateDir | Out-Null }\nSet-Content -Path $contextFile -Value $context\nWrite-Output $context\nexit 0"
+      }
+    ]
+  }
+}
